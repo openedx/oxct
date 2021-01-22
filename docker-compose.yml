@@ -1,0 +1,33 @@
+version: "3.7"
+services:
+    server:
+        image: docker.io/oxct:latest
+        build:
+            context: .
+        environment:
+            OXCT_REDIS_HOST: redis
+            OXCT_LOG_LEVEL: INFO
+        ports:
+            - 127.0.0.1:5000:5000
+        restart: unless-stopped
+        depends_on:
+            - redis
+    refresh-cache:
+        image: docker.io/oxct:latest
+        build:
+            context: .
+        command: python -c "from oxct.server.cache import recompute_expired; recompute_expired()"
+        environment:
+            OXCT_REDIS_HOST: redis
+            OXCT_LOG_LEVEL: INFO
+        restart: unless-stopped
+        depends_on:
+            - redis
+    redis:
+        image: docker.io/redis:6.2.1
+        volumes:
+            - ./oxct/server/config/redis.conf:/etc/redis/oxct.conf:ro
+            - ./data/redis/:/redis/data/
+        command: redis-server /etc/redis/oxct.conf
+        working_dir: /redis/data
+        restart: unless-stopped
